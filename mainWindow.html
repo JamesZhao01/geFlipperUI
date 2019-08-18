@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <script>
+      let $ = (jQuery = require("jquery"));
+      require("jquery-ui-dist/jquery-ui");
+      require("popper.js");
+      require("bootstrap");
+    </script>
+    <title>Bot Dashboard</title>
+    <link rel="stylesheet" href="./node_modules/bootstrap/dist/css/bootstrap.min.css" />
+
+    <!-- Compiled and minified JavaScript -->
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="wrapper row m-0">
+      <div class="bg-light d-flex flex-column sector console">
+        <textarea readonly class="form-control" style="height: 100%;"></textarea>
+        <input type="text" class="form-control" />
+      </div>
+      <div class="sector fixed-panel main">
+        <div class="f1"></div>
+        <div class="accordian" id="accordianExample"></div>
+        <!-- <div class="accordion" id="accordionExample2">
+          <div class="card">
+            <div class="card-header" id="headingThree">
+              <h2 class="mb-0">
+                <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                  Collapsible Group Item #3
+                </button>
+              </h2>
+            </div>
+            <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#accordionExample2">
+              <div class="card-body">
+                Anim pariatur cliche reprehenderit, enim eiusmod high life accusamus terry richardson ad squid. 3 wolf moon officia aute, non cupidatat skateboard dolor brunch. Food truck quinoa nesciunt laborum eiusmod. Brunch 3 wolf moon tempor, sunt aliqua put a bird on it squid single-origin coffee nulla assumenda shoreditch et. Nihil anim keffiyeh helvetica, craft beer labore wes anderson cred nesciunt sapiente ea proident. Ad vegan excepteur butcher vice lomo. Leggings occaecat craft beer farm-to-table, raw denim aesthetic synth nesciunt you probably haven't heard of them accusamus labore sustainable VHS.
+              </div>
+            </div>
+          </div>
+        </div> -->
+      </div>
+      <div class="fixed-panel sector sidebar"></div>
+    </div>
+    <script>
+      window.$ = window.jQuery = require("jquery");
+      const electron = require("electron");
+      const { ipcRenderer } = electron;
+      const grpc = require("grpc");
+
+      var messages = require("./proto/components_pb");
+      var services = require("./proto/components_grpc_pb");
+      var inverseEnum = enumConverter();
+
+      var client = new services.CommandControlClient("localhost:8080", grpc.credentials.createInsecure());
+      var dataRef = null;
+      var accordianData = null;
+
+      console.log(proto);
+
+      $(document).ready(() => {
+        $("input").keydown(e => {
+          if (e.keyCode == 13) {
+            var data = $("input").val();
+            if (data.length) {
+              var textarea = $("textarea");
+              $("input").val("");
+              textarea.val(textarea.val() + (textarea.val().length > 0 ? "\n" : "") + data);
+              textarea.scrollTop(textarea[0].scrollHeight - textarea.height());
+            }
+          }
+        });
+
+        var msg = new messages.ApiRequest();
+        console.log(client);
+        client.apiGet(msg, (err, data) => {
+          dataRef = data;
+          console.log(data);
+          Array.from(data.getDataList()).forEach(e => {
+            console.log(e);
+            console.log(e.getAccount());
+            console.log(e.getStatusupdate());
+          });
+          updateAccordian();
+        });
+
+        ipcRenderer.on("item:add", (e, item) => {
+          var ele = $("<li></li>", { text: item });
+          ele.click(function() {
+            $(this).hide();
+          });
+          $("ul").append(ele);
+        });
+
+        ipcRenderer.on("item:clear", () => {
+          $("ul").empty();
+        });
+      });
+
+      function generateElement(name, id, status) {
+        var div = $("<div>", { class: "card" });
+        var cardHeader = $("<div>", { text: name + " | " + id, class: "card-header", id: "heading" + id });
+        var button = $("<a>", { class: "collapsed", "data-toggle": "collapse", role: "button", href: "#h" + id, "aria-controls": "h" + id, botId: id });
+        button.click(function() {
+          updateDataView(button.attr("botId"));
+        });
+        var div2 = $("<div>", { class: "collapse", id: "h" + id, "data-parent": "#accordianExample", "aria-labelledby": "heading" + id });
+        var cardBody = $("<div>", { text: "num", class: "card-body" });
+        button.append(cardHeader);
+        div2.append(cardBody);
+        div.append(button);
+        div.append(div2);
+
+        return div;
+      }
+
+      function updateAccordian() {
+        dataRef.getDataList().forEach(e => {
+          var account = e.getAccount();
+          $("#accordianExample").append(generateElement(account.getName(), account.getId(), null));
+        });
+      }
+
+      function updateDataView(id) {
+        let dataList = dataRef.getDataList();
+        for (let dataItem of dataList) {
+          if (dataItem.getAccount().getId() == id) {
+            updateSidebar(dataItem);
+            break;
+          }
+        }
+      }
+
+      function updateSidebar(data) {
+        for (let apiData of data.getDataList()) {
+          $(".sidebar").append(generateBox(apiData.getStatusupdate()));
+        }
+      }
+
+      function generateBox(box) {
+        let boxObj = $("<div>", { class: "box" });
+        let boxHeader = $("<div>", { class: "box-header p-2", text: "Box: " + box.getBoxNum() });
+        let boxBody = $("<div>", { class: "box-body p-2" });
+        let boxItemDescription = $("<div>", { class: "px-2" });
+        boxItemDescription.append($("<img>", { src: "https://www.osrsbox.com/osrsbox-db/items-icons/" + box.getItem().getId() + ".png" }));
+        let description = "Name: " + box.getItem().getName() + " | Id: " + box.getItem().getId() + " | Price: " + box.getAmountTraded();
+        let boxStatus = $("<div>", { class: "px-2", text: "Status: " + inverseEnum[box.getStatus()] });
+        let boxProgress = $("<div>", { class: "px-2 d-flex flex-row" });
+        let boxProgressLabel = $("<div>", { class: "mr-2", text: "Progress: " });
+        let boxProgressBar = $("<div>", { class: "progress my-auto" });
+        let boxProgressBarTotal = $("<div>", { class: "progress-var progress-bar-striped progress-bar-animated px-1", role: "progressbar", style: "width: " + box.getAmountTraded() / box.getAmountTotal() + "%", text: box.getAmountTraded() + "/" + box.getAmountTotal() });
+        boxProgressBar.append(boxProgressBarTotal);
+        boxProgress.append(boxProgressLabel).append(boxProgressBar);
+        boxItemDescription.append(description);
+        boxBody
+          .append(boxItemDescription)
+          .append(boxStatus)
+          .append(boxProgress);
+        boxObj.append(boxHeader).append(boxBody);
+        return boxObj;
+      }
+
+      function enumConverter() {
+        let enums = messages.Box.BoxStatus;
+        var obj = {};
+        for (let i of Object.keys(enums)) {
+          obj[enums[i]] = i;
+        }
+        console.log(obj);
+        return obj;
+      }
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+  </body>
+</html>

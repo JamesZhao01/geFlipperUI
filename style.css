@@ -1,0 +1,74 @@
+.row {
+  height: 100vh;
+  width: 100vw;
+}
+
+.form-control {
+  border: 1px solid gray;
+}
+.form-control:focus {
+  border: 1px solid gray;
+  box-shadow: none;
+}
+
+textarea {
+  resize: none;
+}
+
+.fixed-panel {
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sector {
+  border-top: 5px;
+  border-bottom: 5px;
+  border-left: 2.5px;
+  border-right: 2.5px;
+  border-color: lightgray;
+  border-style: solid;
+}
+
+.sector:nth-child(1) {
+  border-left: 5px;
+  border-left-style: solid;
+  border-left-color: lightgray;
+}
+
+.sector:nth-child(3) {
+  border-right: 5px;
+  border-right-style: solid;
+  border-right-color: lightgray;
+}
+
+.console {
+  width: 30%;
+}
+
+.main {
+  width: 30%;
+}
+
+.sidebar {
+  width: 40%;
+}
+
+/*Accordian*/
+.card-header {
+  background-color: #4a4a4a;
+  color: #e8e8e8;
+}
+
+/*Box*/
+.box-header {
+  background-color: gray;
+  color: white;
+}
+.box-body {
+  background-color: #b2b2b2;
+  color: black;
+}
+.progress {
+  width: 50%;
+  background-color: #dbdbdb;
+}
